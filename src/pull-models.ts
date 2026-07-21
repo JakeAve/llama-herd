@@ -17,7 +17,18 @@ for (const model of models) {
     stdout: "inherit",
     stderr: "inherit",
   });
-  const { success } = await command.output();
+  let success: boolean;
+  try {
+    ({ success } = await command.output());
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      console.error(
+        `\n[llama-herd] "ollama" command not found — install it from https://ollama.com/download`,
+      );
+      Deno.exit(1);
+    }
+    throw err;
+  }
   if (!success) {
     failed++;
     console.error(`[llama-herd] failed to pull "${model}"`);
