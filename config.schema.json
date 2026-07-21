@@ -4,11 +4,13 @@
   "title": "llama-herd config",
   "description": "The herd roster. Each role maps to a model + tuned system prompt + Ollama options.",
   "type": "object",
-  "required": ["roles"],
-  "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
-    "$comment": { "type": "string" },
+    "$schema": {
+      "type": "string"
+    },
+    "$comment": {
+      "type": "string"
+    },
     "maxParallelTasks": {
       "type": "integer",
       "minimum": 1,
@@ -23,42 +25,52 @@
     },
     "roles": {
       "type": "object",
-      "description": "Role name -> preset. Role names appear as an enum in the MCP tool schema, so keep them short and task-oriented.",
-      "minProperties": 1,
-      "additionalProperties": { "$ref": "#/$defs/rolePreset" }
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Ollama model tag, e.g. \"llama3.2:3b\". Must already be pulled (`ollama pull <model>`)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Shown to Claude as the role's enum description — keep it short and task-oriented."
+          },
+          "system": {
+            "type": "string",
+            "description": "System prompt tuned for this role."
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string",
+                "boolean"
+              ]
+            },
+            "description": "Ollama request options, e.g. num_ctx, temperature."
+          },
+          "format": {
+            "description": "Optional JSON schema passed to Ollama's `format` for structured output."
+          },
+          "think": {
+            "type": "boolean",
+            "description": "Disable/enable reasoning on hybrid-thinking models (e.g. qwen3.6). Omit for models that don't support the flag."
+          }
+        },
+        "required": [
+          "model",
+          "description",
+          "system"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Role name -> preset. Role names appear as an enum in the MCP tool schema, so keep them short and task-oriented."
     }
   },
-  "$defs": {
-    "rolePreset": {
-      "type": "object",
-      "required": ["model", "description", "system"],
-      "additionalProperties": false,
-      "properties": {
-        "model": {
-          "type": "string",
-          "description": "Ollama model tag, e.g. \"llama3.2:3b\". Must already be pulled (`ollama pull <model>`)."
-        },
-        "description": {
-          "type": "string",
-          "description": "Shown to Claude as the role's enum description — keep it short and task-oriented."
-        },
-        "system": {
-          "type": "string",
-          "description": "System prompt tuned for this role."
-        },
-        "options": {
-          "type": "object",
-          "description": "Ollama request options, e.g. num_ctx, temperature.",
-          "additionalProperties": { "type": ["number", "string", "boolean"] }
-        },
-        "format": {
-          "description": "Optional JSON schema passed to Ollama's `format` for structured output."
-        },
-        "think": {
-          "type": "boolean",
-          "description": "Disable/enable reasoning on hybrid-thinking models (e.g. qwen3.6). Omit for models that don't support the flag."
-        }
-      }
-    }
-  }
+  "required": [
+    "roles"
+  ],
+  "additionalProperties": false
 }

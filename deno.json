@@ -4,13 +4,15 @@
     "start": "deno run --allow-net=127.0.0.1,localhost --allow-read --allow-env src/main.ts",
     "smoke": "deno run --allow-net=127.0.0.1,localhost --allow-read --allow-env src/smoke.ts",
     "pull-models": "deno run --allow-read --allow-env --allow-run=ollama src/pull-models.ts",
-    "check": "deno fmt --check . && deno lint . && deno check",
+    "generate-schema": "deno run --allow-read --allow-write scripts/generate-config-schema.ts",
+    "check": "deno fmt --check . && deno lint . && deno check && deno run --allow-read scripts/generate-config-schema.ts --check",
     "pre-commit": "deno task check",
     "pre-push": "deno task check"
   },
   "imports": {
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.12.0",
     "@modelcontextprotocol/sdk/": "npm:/@modelcontextprotocol/sdk@^1.12.0/",
-    "zod": "npm:zod@^3.24.0"
+    "zod": "npm:zod@^3.24.0",
+    "zod-to-json-schema": "npm:zod-to-json-schema@^3.24.0"
   }
 }
