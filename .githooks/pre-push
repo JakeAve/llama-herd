@@ -1,2 +1,5 @@
 #!/bin/sh
+# GUI git clients (VS Code, etc.) run hooks with a minimal PATH that skips
+# .zshrc/.bashrc, so deno's install location may not be on it.
+export PATH="$HOME/.deno/bin:$PATH"
 deno task pre-push

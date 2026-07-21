@@ -21,6 +21,11 @@ Claude picks a worker instead of improvising model configs.
 - `delegate_custom` — escape hatch: any pulled model + custom system prompt. If
   Claude reaches for this often, the roster is missing a role.
 
+## Prerequisites
+
+- Deno: https://docs.deno.com/runtime/getting_started/installation
+- Ollama: https://ollama.com/download
+
 ## Setup
 
 ```sh
