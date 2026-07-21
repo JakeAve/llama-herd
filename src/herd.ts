@@ -28,8 +28,11 @@ export async function loadHerd(): Promise<HerdConfig> {
   const path = explicit ??
     (await exists(CONFIG_PATH) ? CONFIG_PATH : DEFAULT_CONFIG_PATH);
   const raw = JSON.parse(await Deno.readTextFile(path));
-  if (!raw.roles || Object.keys(raw.roles).length === 0) {
-    throw new Error(`No roles defined in herd config (${path})`);
+  const errors = validateConfig(raw);
+  if (errors.length > 0) {
+    throw new Error(
+      `Invalid herd config (${path}):\n  - ${errors.join("\n  - ")}`,
+    );
   }
   return {
     roles: raw.roles,
@@ -44,6 +47,99 @@ async function exists(path: URL): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+const TOP_LEVEL_KEYS = new Set([
+  "$schema",
+  "$comment",
+  "maxParallelTasks",
+  "ollamaHost",
+  "roles",
+]);
+const ROLE_PRESET_KEYS = new Set([
+  "model",
+  "description",
+  "system",
+  "options",
+  "format",
+  "think",
+]);
+
+/** Structural validation matching config.schema.json. Returns human-readable error messages, empty if valid. */
+function validateConfig(raw: unknown): string[] {
+  const errors: string[] = [];
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return ["config must be a JSON object"];
+  }
+  const config = raw as Record<string, unknown>;
+
+  for (const key of Object.keys(config)) {
+    if (!TOP_LEVEL_KEYS.has(key)) errors.push(`unknown top-level key "${key}"`);
+  }
+
+  if (
+    "maxParallelTasks" in config &&
+    (!Number.isInteger(config.maxParallelTasks) ||
+      (config.maxParallelTasks as number) < 1)
+  ) {
+    errors.push(`"maxParallelTasks" must be an integer >= 1`);
+  }
+
+  if ("ollamaHost" in config && typeof config.ollamaHost !== "string") {
+    errors.push(`"ollamaHost" must be a string`);
+  }
+
+  if (!("roles" in config)) {
+    errors.push(`missing required "roles"`);
+  } else if (
+    typeof config.roles !== "object" || config.roles === null ||
+    Array.isArray(config.roles)
+  ) {
+    errors.push(`"roles" must be an object`);
+  } else {
+    const roles = config.roles as Record<string, unknown>;
+    if (Object.keys(roles).length === 0) {
+      errors.push(`"roles" must define at least one role`);
+    }
+    for (const [name, preset] of Object.entries(roles)) {
+      validateRolePreset(name, preset, errors);
+    }
+  }
+
+  return errors;
+}
+
+function validateRolePreset(
+  name: string,
+  raw: unknown,
+  errors: string[],
+): void {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    errors.push(`role "${name}" must be an object`);
+    return;
+  }
+  const preset = raw as Record<string, unknown>;
+
+  for (const key of Object.keys(preset)) {
+    if (!ROLE_PRESET_KEYS.has(key)) {
+      errors.push(`role "${name}" has unknown key "${key}"`);
+    }
+  }
+  for (const field of ["model", "description", "system"] as const) {
+    if (typeof preset[field] !== "string") {
+      errors.push(`role "${name}" is missing required string "${field}"`);
+    }
+  }
+  if (
+    "options" in preset &&
+    (typeof preset.options !== "object" || preset.options === null ||
+      Array.isArray(preset.options))
+  ) {
+    errors.push(`role "${name}" has "options" that must be an object`);
+  }
+  if ("think" in preset && typeof preset.think !== "boolean") {
+    errors.push(`role "${name}" has "think" that must be a boolean`);
   }
 }
 
