@@ -15,6 +15,13 @@ export interface HerdConfig {
   maxParallelTasks: number;
   /** Base URL of the Ollama server. */
   ollamaHost: string;
+  /** Absolute path to the config file actually loaded. */
+  configPath: string;
+  /**
+   * Absolute path to the llama-herd repo root (derived from this module's own
+   * location, not Deno.cwd()
+   */
+  repoRoot: string;
 }
 
 const DEFAULT_MAX_PARALLEL_TASKS = 3;
@@ -22,6 +29,7 @@ const DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434";
 
 const CONFIG_PATH = new URL("../config.json", import.meta.url);
 const DEFAULT_CONFIG_PATH = new URL("../default.config.json", import.meta.url);
+const REPO_ROOT_URL = new URL("..", import.meta.url);
 
 export async function loadHerd(): Promise<HerdConfig> {
   const explicit = Deno.env.get("HERD_CONFIG");
@@ -38,6 +46,8 @@ export async function loadHerd(): Promise<HerdConfig> {
     roles: raw.roles,
     maxParallelTasks: raw.maxParallelTasks ?? DEFAULT_MAX_PARALLEL_TASKS,
     ollamaHost: raw.ollamaHost ?? DEFAULT_OLLAMA_HOST,
+    configPath: await Deno.realPath(path),
+    repoRoot: await Deno.realPath(REPO_ROOT_URL),
   };
 }
 

@@ -2,7 +2,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { findMissingModels, type HerdConfig, loadHerd } from "./herd.ts";
-import { type ChatResult, OllamaClient } from "./ollama.ts";
+import {
+  type ChatResult,
+  OllamaClient,
+  OllamaConnectionError,
+  OllamaHttpError,
+} from "./ollama.ts";
 
 const herd = await loadHerd();
 const ollama = new OllamaClient(herd.ollamaHost);
@@ -63,11 +68,32 @@ function toToolResult(result: ChatResult) {
   };
 }
 
-function toErrorResult(err: unknown) {
+/**
+ * The caller of this MCP server is a Claude agent, not the human directly —
+ * so error text should be phrased for the agent to relay a clear, actionable
+ * suggestion to its user, not as a raw exception message.
+ */
+function describeError(
+  err: unknown,
+  ctx: { role?: string; model: string },
+): string {
+  if (err instanceof OllamaConnectionError) {
+    return `${err.message} Check "ollamaHost" in ${herd.configPath}, or start Ollama.`;
+  }
+  if (err instanceof OllamaHttpError && err.status === 404) {
+    const subject = ctx.role
+      ? `Model "${ctx.model}" (role "${ctx.role}")`
+      : `Model "${ctx.model}"`;
+    return `${subject} is not available in local Ollama. Fixes: (a) pull it — ollama pull ${ctx.model}, or run: deno task --cwd ${herd.repoRoot} pull-models to pull the whole roster; (b) if pulling fails, the tag may be a typo — check ${herd.configPath}.`;
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
+function toErrorResult(err: unknown, ctx: { role?: string; model: string }) {
   return {
     content: [{
       type: "text" as const,
-      text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+      text: `Error: ${describeError(err, ctx)}`,
     }],
     isError: true,
   };
@@ -94,7 +120,7 @@ server.registerTool("delegate", {
   try {
     return toToolResult(await runRole(herd, role, task, context, instructions));
   } catch (err) {
-    return toErrorResult(err);
+    return toErrorResult(err, { role, model: herd.roles[role].model });
   }
 });
 
@@ -118,7 +144,12 @@ server.registerTool("delegate_batch", {
       ? `### Task ${
         i + 1
       }\n${r.value.content}\n[${r.value.model} · ${r.value.totalDurationMs}ms]`
-      : `### Task ${i + 1}\nError: ${r.reason?.message ?? r.reason}`
+      : `### Task ${i + 1}\nError: ${
+        describeError(r.reason, {
+          role: tasks[i].role,
+          model: herd.roles[tasks[i].role].model,
+        })
+      }`
   ).join("\n\n");
   return { content: [{ type: "text" as const, text }] };
 });
@@ -156,7 +187,7 @@ server.registerTool("delegate_custom", {
     );
     return toToolResult(result);
   } catch (err) {
-    return toErrorResult(err);
+    return toErrorResult(err, { model });
   }
 });
 
