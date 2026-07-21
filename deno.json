@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "setup": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/pre-push",
+    "start": "deno run --allow-net=127.0.0.1,localhost --allow-read --allow-env src/main.ts",
+    "smoke": "deno run --allow-net=127.0.0.1,localhost --allow-read --allow-env src/smoke.ts",
+    "pull-models": "deno run --allow-read --allow-env --allow-run=ollama src/pull-models.ts",
+    "check": "deno fmt --check . && deno lint . && deno check",
+    "pre-commit": "deno task check",
+    "pre-push": "deno task check"
+  },
+  "imports": {
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.12.0",
+    "@modelcontextprotocol/sdk/": "npm:/@modelcontextprotocol/sdk@^1.12.0/",
+    "zod": "npm:zod@^3.24.0"
+  }
+}

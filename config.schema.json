@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jacobavery/llama-herd/config.schema.json",
+  "title": "llama-herd config",
+  "description": "The herd roster. Each role maps to a model + tuned system prompt + Ollama options.",
+  "type": "object",
+  "required": ["roles"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "maxParallelTasks": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3,
+      "description": "Max independent tasks accepted in one delegate_batch call. Defaults to 3 if omitted; raise it on beefier hardware."
+    },
+    "ollamaHost": {
+      "type": "string",
+      "default": "http://127.0.0.1:11434",
+      "description": "Base URL of the Ollama server. Defaults to the local instance if omitted. If you point this at a non-local host, also loosen the --allow-net flag in deno.json."
+    },
+    "roles": {
+      "type": "object",
+      "description": "Role name -> preset. Role names appear as an enum in the MCP tool schema, so keep them short and task-oriented.",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/rolePreset" }
+    }
+  },
+  "$defs": {
+    "rolePreset": {
+      "type": "object",
+      "required": ["model", "description", "system"],
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Ollama model tag, e.g. \"llama3.2:3b\". Must already be pulled (`ollama pull <model>`)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Shown to Claude as the role's enum description — keep it short and task-oriented."
+        },
+        "system": {
+          "type": "string",
+          "description": "System prompt tuned for this role."
+        },
+        "options": {
+          "type": "object",
+          "description": "Ollama request options, e.g. num_ctx, temperature.",
+          "additionalProperties": { "type": ["number", "string", "boolean"] }
+        },
+        "format": {
+          "description": "Optional JSON schema passed to Ollama's `format` for structured output."
+        },
+        "think": {
+          "type": "boolean",
+          "description": "Disable/enable reasoning on hybrid-thinking models (e.g. qwen3.6). Omit for models that don't support the flag."
+        }
+      }
+    }
+  }
+}

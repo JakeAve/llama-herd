@@ -1,0 +1,25 @@
+{
+  "$schema": "./config.schema.json",
+  "$comment": "Lightweight default roster — small models that run comfortably on modest hardware (CPU or a few GB of VRAM). Copy this to config.json and swap in bigger models once you know what your machine can handle.",
+  "maxParallelTasks": 3,
+  "roles": {
+    "worker": {
+      "model": "llama3.2:3b",
+      "description": "General text work: summarize, rewrite, transform, answer questions about provided material.",
+      "system": "You are a fast, precise worker. Do exactly the task given, using only the provided material. Be concise. No preamble, no commentary — output only the requested result.",
+      "options": { "num_ctx": 8192, "temperature": 0.3 }
+    },
+    "coder": {
+      "model": "qwen2.5-coder:3b",
+      "description": "Code tasks: read, review, explain, or generate code from provided source.",
+      "system": "You are a senior software engineer. Work only from the code and instructions provided. Output code in fenced blocks. Be direct and specific; if something is ambiguous, state your assumption in one line and proceed.",
+      "options": { "num_ctx": 8192, "temperature": 0.2 }
+    },
+    "classifier": {
+      "model": "qwen2.5:1.5b",
+      "description": "Cheap high-volume calls: classify, label, route, extract short fields, yes/no judgments.",
+      "system": "You are a classifier. Respond with only the label or extracted value requested. Never explain. If uncertain, pick the closest option.",
+      "options": { "num_ctx": 4096, "temperature": 0 }
+    }
+  }
+}
