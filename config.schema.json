@@ -17,6 +17,7 @@
     },
     "ollamaHost": {
       "type": "string",
+      "format": "uri",
       "default": "http://127.0.0.1:11434",
       "description": "Base URL of the Ollama server. Defaults to the local instance if omitted. If you point this at a non-local host, also loosen the --allow-net flag in deno.json."
     },
